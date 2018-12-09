@@ -1,0 +1,5 @@
+2018/12/09-18:13:41.842 32bc Recovering log #372
+2018/12/09-18:13:41.842 32bc Level-0 table #374: started
+2018/12/09-18:13:41.883 32bc Level-0 table #374: 237 bytes OK
+2018/12/09-18:13:41.907 32bc Delete type=0 #372
+2018/12/09-18:13:41.908 32bc Delete type=3 #370

@@ -1,0 +1,26 @@
+{
+  "name": "backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "adm-zip": "^0.4.11",
+    "cookie-parser": "~1.4.3",
+    "cors": "^2.8.4",
+    "debug": "~2.6.9",
+    "express": "~4.16.0",
+    "express-fileupload": "^1.0.0",
+    "express-pouchdb": "^4.1.0",
+    "http-errors": "~1.6.2",
+    "jade": "~1.11.0",
+    "leveldown": "^3.0.1",
+    "morgan": "~1.9.0",
+    "pouchdb-find": "^7.0.0",
+    "unrar": "^0.1.7",
+    "unrar-js": "^0.2.3",
+    "unzip": "^0.1.11",
+    "yauzl": "^2.10.0"
+  }
+}

@@ -1,0 +1,5 @@
+2018/12/09-17:20:43.784 17fc Recovering log #828
+2018/12/09-17:20:43.784 17fc Level-0 table #830: started
+2018/12/09-17:20:43.850 17fc Level-0 table #830: 237 bytes OK
+2018/12/09-17:20:43.910 17fc Delete type=0 #828
+2018/12/09-17:20:43.910 17fc Delete type=3 #826

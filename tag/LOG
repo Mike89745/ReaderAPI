@@ -1,0 +1,5 @@
+2018/12/09-18:13:41.848 c5c Recovering log #831
+2018/12/09-18:13:41.849 c5c Level-0 table #833: started
+2018/12/09-18:13:41.902 c5c Level-0 table #833: 237 bytes OK
+2018/12/09-18:13:41.935 c5c Delete type=0 #831
+2018/12/09-18:13:41.935 c5c Delete type=3 #829
