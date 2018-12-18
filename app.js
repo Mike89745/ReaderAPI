@@ -184,10 +184,6 @@ app.get("/getBook/:id",(req,res) => {
   });
 });
 app.post("/Search/",(req,res) => {
-  console.log(req.body);
-  let INtags = req.body.INtags ? req.body.INtags.split(',') : [];
-  let NORtags = req.body.INtags ?req.body.NORtags.split(',') : [];
-  console.log(INtags,NORtags);
   books.createIndex({
     index: {
       fields: ['_id',"author","artist","status","tags"]
@@ -196,8 +192,8 @@ app.post("/Search/",(req,res) => {
     return books.find({
       selector: {
         _id : {$regex : req.body.text},
-        tags: {$all : INtags},
-        tags: {$nin : NORtags},
+        tags: {$all : req.body.INtags},
+        tags: {$nin : req.body.NINtags},
       },
     }).then(response => {
       console.log(response);

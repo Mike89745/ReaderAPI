@@ -1,5 +1,5 @@
-2018/12/09-18:14:17.755 32bc Recovering log #243
-2018/12/09-18:14:17.755 32bc Level-0 table #245: started
-2018/12/09-18:14:17.780 32bc Level-0 table #245: 373 bytes OK
-2018/12/09-18:14:17.799 32bc Delete type=0 #243
-2018/12/09-18:14:17.799 32bc Delete type=3 #241
+2018/12/11-18:07:43.921 3a04 Recovering log #266
+2018/12/11-18:07:43.921 3a04 Level-0 table #268: started
+2018/12/11-18:07:43.928 3a04 Level-0 table #268: 237 bytes OK
+2018/12/11-18:07:43.941 3a04 Delete type=0 #266
+2018/12/11-18:07:43.941 3a04 Delete type=3 #264
