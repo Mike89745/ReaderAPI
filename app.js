@@ -31,13 +31,11 @@ app.use('/db', require('express-pouchdb')(PouchDB));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use(cors());
-app.get("/test/", function(req,res){
-  chapters.destroy().then(res => res.json("delted")).catch(err => res.json("err"));
-});
+
 app.post('/upload/image',  upload.single('file'), function (req, res, next) {
   let file = req.file;
   fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id}/${req.body.chapterName}/${file.originalname}`)
-  res.json("penus");
+  res.json("Done");
 })
 
 /*app.get("/CreateTags",function(req,res){
@@ -93,10 +91,10 @@ app.post("/addChapter",function(req,res){
   }
   chapters.post(chapter).then(response => {
     fs.mkdirSync(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
-      err ? console.log(err) : res.json("added");
+      err ? console.log(err) : null;
     });
-    res.json("added");
-  }).catch(err => res.json(">><<"));
+    res.json("Chapter Added");
+  }).catch(err => res.json(err));
  
 });
 app.post("/addReview",function(req,res){
