@@ -5,13 +5,15 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-var fileUpload = require('express-fileupload');
+
 var cors = require('cors');
 var fs = require('fs');
 var unzip = require('unzip');
 var app = express();
 var PouchDB = require('pouchdb');
 PouchDB.plugin(require('pouchdb-find'));
+var multer  = require('multer')
+var upload = multer({ dest: 'public/' })
 var books = new PouchDB("book");
 var reviews = new PouchDB("review");
 var chapters = new PouchDB("chapter");
@@ -29,45 +31,14 @@ app.use('/db', require('express-pouchdb')(PouchDB));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use(cors());
-app.use(fileUpload());
-
-// catch 404 and forward to error handler
-app.post('/upload', (req, res, next) => {
-  
-  let file = req.files.file;
-  console.log(req.files.file.mimetype);
-  if(file.mimetype === "image/jpeg" ||file.mimetype === "image/png" ||file.mimetype === "image/jpeg" ||file.mimetype === "application/octet-stream"){
-    file.mv(`${__dirname}/public/${file.name}`, function(err) {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      if(file.mimetype === "application/octet-stream"){
-        
-        const spawn = require('child_process').spawn;
-        const ls = spawn('python', ['public/cbxmanager.py', `${__dirname}/public/${file.name}`]);
-
-        ls.stdout.on('data', (data) => {
-          console.log(`stdout: ${data}`);
-        });
-
-        ls.stderr.on('data', (data) => {
-          console.log(`stderr: ${data}`);
-        });
-
-        ls.on('close', (code) => {
-          console.log(`child process exited with code ${code}`);
-        });
-        //fs.unlink(`${__dirname}/public/${file.name}`);
-        res.json({file: `public/${file.name}`,status:"Comic was uploaded and unzipped at " + `${file.name.substring(0, file.name.lastIndexOf('.'))}`});
-      }else{
-        res.json({file: `public/${file.name}`,status:"image was uploaded at " + `${file.name}`});
-      }
-    
-    });
-  }else{
-    res.json({status: "This is not a valid file type!"});
-  }
+app.get("/test/", function(req,res){
+  chapters.destroy().then(res => res.json("delted")).catch(err => res.json("err"));
 });
+app.post('/upload/image',  upload.single('file'), function (req, res, next) {
+  let file = req.file;
+  fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id}/${req.body.chapterName}/${file.originalname}`)
+  res.json("penus");
+})
 
 /*app.get("/CreateTags",function(req,res){
   let tag = ["4-Koma","Action","Adventure","Award Winning","Comedy","Cooking","Doujinshi","Drama","Ecchi","Fanstasy","Gender Bender","Harem","Historical","Horror","Isekai","Josei","Martial Arts","Mecha","Medical","Music","Mystery","Oneshot","Psychological","Romance","School Life","Sci-Fi","Seinen","Shoujo","Shoujo Ai","Shounen","Slice of life","Smut","Sports","Supernatural","Tragedy","Webtoon","Yuri","Game"]
@@ -117,11 +88,15 @@ app.post("/addChapter",function(req,res){
     number : req.body.number,
     title : req.body.title,
     dateAdded : new Date().toDateString(),
+    size : req.body.size,
+    pages : req.body.pages,
   }
   chapters.post(chapter).then(response => {
-    fs.mkdirSync(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`);
-    res.send(response);
-  }).catch(err => res.send(err));
+    fs.mkdirSync(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
+      err ? console.log(err) : res.json("added");
+    });
+    res.json("added");
+  }).catch(err => res.json(">><<"));
  
 });
 app.post("/addReview",function(req,res){
@@ -196,7 +171,6 @@ app.post("/Search/",(req,res) => {
         tags: {$nin : req.body.NINtags},
       },
     }).then(response => {
-      console.log(response);
       res.json(response);
       
     }).catch(err => console.log(err));
