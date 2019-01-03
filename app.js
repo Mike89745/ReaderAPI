@@ -34,7 +34,7 @@ app.use(cors());
 
 app.post('/upload/image',  upload.single('file'), function (req, res, next) {
   let file = req.file;
-  fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id}/${req.body.chapterName}/${file.originalname}`)
+  fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.chapterName}/${file.originalname}`)
   res.json("Done");
 })
 
@@ -88,7 +88,9 @@ app.post("/addChapter",function(req,res){
     dateAdded : new Date().toDateString(),
     size : req.body.size,
     pages : req.body.pages,
+    type : req.body.type,
   }
+  console.log(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`);
   chapters.post(chapter).then(response => {
     fs.mkdirSync(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
       err ? console.log(err) : null;
