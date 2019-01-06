@@ -34,7 +34,7 @@ app.use(cors());
 
 app.post('/upload/image',  upload.single('file'), function (req, res, next) {
   let file = req.file;
-  fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.chapterName}/${file.originalname}`)
+  fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.chapterName}/${file.originalname.split('.').slice(0, -1).join('.')}.jpg`)
   res.json("Done");
 })
 
