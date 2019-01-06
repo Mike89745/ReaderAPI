@@ -5,7 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-
+const sharp = require('sharp');
 var cors = require('cors');
 var fs = require('fs');
 var unzip = require('unzip');
@@ -52,7 +52,7 @@ app.post('/upload/image',  upload.single('file'), function (req, res, next) {
   }).catch(err => console.log(err));
   res.send(tagse);
 })*/
-app.post("/addBook", function(req,res){
+app.post("/addBook", upload.single('file'),function(req,res){
   const book ={
     _id : req.body.title,
     author :  req.body.author,
@@ -62,21 +62,19 @@ app.post("/addBook", function(req,res){
     description : req.body.description,
     tags: req.body.tags.split(","),
   }
-  let file = req.files.file;
+  let file = req.file;
   books.put(book).then((response) => {
-  fileName = response.id.replace(/[/\\?%*:|"<>. ]/g, '-');
-  fs.mkdirSync(`${__dirname}/public/books/${fileName}`);
-  file.mv(`${__dirname}/public/thumbnails/${fileName}.${file.name.split('.').pop()}`, function(err) {
-    if (err) {
-      return res.status(500).send(err);
-    }else{
-      res.json("Book added");
-    }
-  });
-  
+    let fileName = response.id.replace(/[/\\?%*:|"<>. ]/g, '-');
+    fs.mkdirSync(`${__dirname}/public/books/${fileName}`);
+    fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/thumbnails/${fileName}.jpg`)
+    const readStream = fs.createReadStream(`${__dirname}/public/thumbnails/${fileName}.jpg`);
+    let transform = sharp();
+    transform.resize(180,null).toFile(`${__dirname}/public/thumbnails/${fileName}_s.jpg`);
+    readStream.pipe(transform);
+    res.json("OK");
   }).catch(function (err) {
     res.json(err);
-    // res.send(err);
+    console.log(err);
   });
   
 });
