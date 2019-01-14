@@ -21,3 +21,6 @@
 [Sun, 18 Nov 2018 15:00:04 GMT] [info] [<0.000.0>] ::1 - - GET /book 200
 [Sun, 18 Nov 2018 15:00:05 GMT] [info] [<0.000.0>] ::1 - - GET /book 304
 [Sun, 18 Nov 2018 17:02:29 GMT] [info] [<0.000.0>] ::1 - - GET / 304
+[Mon, 14 Jan 2019 18:17:06 GMT] [info] [<0.000.0>] ::1 - - GET / 200
+[Mon, 14 Jan 2019 18:23:23 GMT] [info] [<0.000.0>] ::1 - - GET / 200
+[Mon, 14 Jan 2019 19:08:32 GMT] [info] [<0.000.0>] ::1 - - GET /users 200

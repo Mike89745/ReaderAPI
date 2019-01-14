@@ -18,6 +18,7 @@ var books = new PouchDB("book");
 var reviews = new PouchDB("review");
 var chapters = new PouchDB("chapter");
 var tags = new PouchDB("tag");
+var users = new PouchDB("users");
 var PouchDBFolder = PouchDB.defaults({prefix: '/PouchDB/'});
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -259,19 +260,13 @@ app.get("/getThumbNail/:id",(req,res)=>{
     res.sendFile(`${__dirname}/public/ImageNotFound.png`);
   }
 });
-app.get("/dbs/:db/:id", function(req,res){
+app.get("/dbs/:db/", function(req,res){
   var db = new PouchDB(req.params.db, { skip_setup: true })
-  db.info().then(() => {
-    db.find({
-      selector: {
-        title: {$eq: req.params.id}
-      }
-    }).then(response => {
-      res.send(response);
-    });
+  db.info().then((response) => {
+    res.json(response)
   })
   .catch(e => {
-    res.send(e);
+    res.json(e);
   });
 });
 app.get("/deleteBook/:id", function(req,res){
@@ -283,7 +278,90 @@ app.get("/deleteBook/:id", function(req,res){
     return true;
   });
 });
+app.post("/Login",(req,res) =>{
+  const bcrypt = require('bcrypt');
+  users.createIndex({
+    index: {
+      fields: ["email"]
+    }
+  }).then(() => {
+    return users.find({ 
+      selector: {
+        email : {$eq : req.body.email},
+      },
+    }).then(response =>{
 
+      if(response.docs.length > 0){
+        bcrypt.compare(req.body.password, response.docs[0].password).then(pass => {
+          if(pass){
+            res.json({user : response.docs[0],err:false});
+          }else{
+            res.json({user : null,err:"4"});
+          }
+        }).catch(err => {
+          res.json({user : null,err:"1"})
+        }); 
+      }
+    }).catch(err => res.json({user : null,err:"2"}))
+  }).catch(err =>res.json({user : null,err:"3"}));
+});
+app.post("/Register",(req,res) =>{
+  const bcrypt = require('bcrypt');
+  const saltRounds = 10;
+  const myPlaintextPassword = req.body.password;
+  
+  bcrypt.genSalt(saltRounds, function(err, salt) {
+    bcrypt.hash(myPlaintextPassword, salt, function(err, hash) {
+      users.createIndex({
+        index: {
+          fields: ["nick"]
+        }
+      }).then(() => {
+        return users.find({
+          selector: {
+            nick : {$eq : req.body.nick},
+          },
+        }).then(response =>{
+          if(response.docs.length === 0){
+            users.createIndex({
+              index: {
+                fields: ["email"]
+              }
+            }).then(() => {
+              return users.find({
+                selector: {
+                  email : {$eq : req.body.email},
+                },
+              }).then(response =>{
+                if(response.docs.length === 0){
+                  users.post({
+                    nick : req.body.nick,
+                    email : req.body.email,
+                    password : hash
+                  }).then(resp => {
+                    var db = new PouchDB(req.body.nick + "-library")
+                    var db = new PouchDB(req.body.nick + "-chapters")
+                    res.json({err: false,msg : "Registred"});
+                    //res ? console.log("failed"): console.log("registration failed");
+                  }).catch(err => res.json({err: true,msg : err}))
+                }else{
+                  res.json({err: true,msg : "Email Taken"});
+                }
+              }).catch(err => res.json(err));
+            }).catch(function (err) {
+              res.json({err: true,msg : err});
+            });
+          }else{
+            res.json({err: true,msg : "Nick Taken"});
+          }
+        }).catch(err => res.json({err: true,msg : err}));
+      }).catch(function (err) {
+        res.json({err: true,msg : err});
+      });
+    });
+  });
+});
+  
 
 
 app.use(function(req, res, next) {
