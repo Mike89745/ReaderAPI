@@ -296,14 +296,16 @@ app.post("/Login",(req,res) =>{
           if(pass){
             res.json({user : response.docs[0],err:false});
           }else{
-            res.json({user : null,err:"4"});
+            res.json({user : null,err:true});
           }
         }).catch(err => {
-          res.json({user : null,err:"1"})
+          res.json({user : null,err:true})
         }); 
+      }else{
+        res.json({user:null,err:true});
       }
-    }).catch(err => res.json({user : null,err:"2"}))
-  }).catch(err =>res.json({user : null,err:"3"}));
+    }).catch(err => res.json({user : null,err:true}))
+  }).catch(err =>res.json({user : null,err:true}));
 });
 app.post("/Register",(req,res) =>{
   const bcrypt = require('bcrypt');
