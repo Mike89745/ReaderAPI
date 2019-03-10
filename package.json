@@ -17,6 +17,7 @@
     "express-sharp": "^2.1.1",
     "http-errors": "~1.6.2",
     "jade": "~1.11.0",
+    "jsonwebtoken": "^8.5.0",
     "leveldown": "^3.0.1",
     "morgan": "~1.9.0",
     "multer": "^1.4.1",

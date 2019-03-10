@@ -19,7 +19,9 @@ var reviews = new PouchDB("review");
 var chapters = new PouchDB("chapter");
 var tags = new PouchDB("tag");
 var users = new PouchDB("users");
+var adminUser = new PouchDB("adminUser");
 var PouchDBFolder = PouchDB.defaults({prefix: '/PouchDB/'});
+var jwt = require('jsonwebtoken');
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -34,14 +36,21 @@ app.use('/users', usersRouter);
 app.use(cors());
 
 app.post('/upload/image',  upload.single('file'), function (req, res, next) {
-  let file = req.file;
-  let mimeType = file.mimetype === "application/pdf" ? ".pdf" : file.mimetype === "application/epub+zip" ? ".epub" : ".jpg";
-  let name = file.originalname.split('.').slice(0, -1).join('.')
-  if(mimeType != ".jpg"){
-    name = req.body.chapterName;
-  }
-  fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.chapterName}/${name}${mimeType}`)
-  res.json("Done");
+  jwt.verify(req.body.token, "Deez Nuts", function(err, decoded) {
+    if (err){
+      res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    }else{
+      let file = req.file;
+      let mimeType = file.mimetype === "application/pdf" ? ".pdf" : file.mimetype === "application/epub+zip" ? ".epub" : ".jpg";
+      let name = file.originalname.split('.').slice(0, -1).join('.')
+      if(mimeType != ".jpg"){
+        name = req.body.chapterName;
+      }
+      fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.chapterName}/${name}${mimeType}`)
+      res.json("Done");
+    }
+  })
+ 
 })
 
 /*app.get("/CreateTags",function(req,res){
@@ -58,48 +67,85 @@ app.post('/upload/image',  upload.single('file'), function (req, res, next) {
   }).catch(err => console.log(err));
   res.send(tagse);
 })*/
-app.post("/addBook", upload.single('file'),function(req,res){
-  const book ={
-    _id : req.body.title,
-    author :  req.body.author,
-    artist :  req.body.artist,
-    rating : 0.00,
-    status : req.body.status,
-    description : req.body.description,
-    tags: req.body.tags.split(","),
-  }
-  let file = req.file;
-  books.put(book).then((response) => {
-    let fileName = response.id.replace(/[/\\?%*:|"<>. ]/g, '-');
-    fs.mkdirSync(`${__dirname}/public/books/${fileName}`);
-    fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/thumbnails/${fileName}.jpg`)
-    const readStream = fs.createReadStream(`${__dirname}/public/thumbnails/${fileName}.jpg`);
-    let transform = sharp();
-    transform.resize(180,null).toFile(`${__dirname}/public/thumbnails/${fileName}_s.jpg`);
-    readStream.pipe(transform);
-    res.json("OK");
-  }).catch(function (err) {
-    res.json(err);
-    console.log(err);
-  });
+/*app.get("/addAdmin",function(req,res){
   
+  const bcrypt = require('bcrypt');
+  const saltRounds = 10;
+  const myPlaintextPassword = "admin";
+  
+  bcrypt.genSalt(saltRounds, function(err, salt) {
+    bcrypt.hash(myPlaintextPassword, salt, function(err, hash) {
+      if(err){
+        res.json({err: true,msg : err})
+      } 
+      else{
+        adminUser.post({
+          nick : "admin",
+          email : "admin",
+          password : hash
+        }).then(res => {
+          res.json({err: false,msg : "Registred"});
+          //res ? console.log("failed"): console.log("registration failed");
+        }).catch(err => res.json({err: true,msg : err}))
+      }
+    })
+  })
+});*/
+app.post("/addBook", upload.single('file'),function(req,res){
+  console.log(req.body.token);
+  jwt.verify(req.body.token, "Deez Nuts", function(err, decoded) {
+    if (err){
+      res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    }else{
+      const book ={
+        _id : req.body.title,
+        author :  req.body.author,
+        artist :  req.body.artist,
+        rating : 0.00,
+        status : req.body.status,
+        description : req.body.description,
+        tags: req.body.tags.split(","),
+      }
+      let file = req.file;
+      books.put(book).then((response) => {
+        let fileName = response.id.replace(/[/\\?%*:|"<>. ]/g, '-');
+        fs.mkdirSync(`${__dirname}/public/books/${fileName}`);
+        fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/thumbnails/${fileName}.jpg`)
+        const readStream = fs.createReadStream(`${__dirname}/public/thumbnails/${fileName}.jpg`);
+        let transform = sharp();
+        transform.resize(180,null).toFile(`${__dirname}/public/thumbnails/${fileName}_s.jpg`);
+        readStream.pipe(transform);
+        res.json("OK");
+      }).catch(function (err) {
+        res.json(err);
+        console.log(err);
+      });
+    }
+  })
 });
 app.post("/addChapter",function(req,res){
-  const chapter = {
-    book_id : req.body.book_id,
-    number : req.body.number,
-    title : req.body.title,
-    dateAdded : new Date().toDateString(),
-    size : req.body.size,
-    pages : req.body.pages,
-    type : req.body.type,
-  }
-  chapters.post(chapter).then(response => {
-    fs.mkdirSync(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
-      err ? console.log(err) : null;
-    });
-    res.json("Chapter Added");
-  }).catch(err => res.json(err));
+  jwt.verify(req.body.token, "Deez Nuts", function(err, decoded) {
+    if (err){
+       res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    }else{
+      const chapter = {
+        book_id : req.body.book_id,
+        number : req.body.number,
+        title : req.body.title,
+        dateAdded : new Date().toDateString(),
+        size : req.body.size,
+        pages : req.body.pages,
+        type : req.body.type,
+      }
+      chapters.post(chapter).then(response => {
+        fs.mkdirSync(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
+          err ? console.log(err) : null;
+        });
+        res.json("Chapter Added");
+      }).catch(err => res.json(err));
+    }
+  })
+  
  
 });
 app.post("/addReview",(req,res)=>{
@@ -243,40 +289,50 @@ app.get("/dbs/:db/", function(req,res){
     res.json(e);
   });
 });
-app.get("/deleteBook/:id", function(req,res){
-  books.get(req.params.id).then(response=>{
-    const BookRemove = response;
-    books.remove(BookRemove).then(response => {
-      let fileName = req.params.id.replace(/[/\\?%*:|"<>. ]/g, '-');
-      fs.unlinkSync(`${__dirname}/public/books/${fileName}`);
-      res.send(response);
-      return true;
-    }).catch(function (err) {
-      res.json(error);
-      return true;
-    });
-  }).catch(error => {
-    console.log(error);
-    res.json(error);
+app.post("/deleteBook", function(req,res){
+  jwt.verify(req.body.token, "Deez Nuts", function(err, decoded) {
+    if (err){
+       res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    }else{
+      books.get(req.body.id).then(response=>{
+        const BookRemove = response;
+        books.remove(BookRemove).then(response => {
+          let fileName = req.body.id.replace(/[/\\?%*:|"<>. ]/g, '-');
+          fs.unlinkSync(`${__dirname}/public/books/${fileName}`);
+          res.send(response);
+          return true;
+        }).catch(function (err) {
+          res.json(err);
+          return true;
+        });
+      }).catch(error => {
+        console.log(error);
+        res.json(error);
+      })
+    }
   })
-
-  
-  
 });
-app.get("/deleteChapter/:id", function(req,res){
-  chapters.get(req.params.id).then(response => {
-    const chapter = response;
-    chapters.remove(chapter).then(response => {
-      fs.mkdirSync(`${__dirname}/public/books/${req.params.id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${chapter.number}-${chapter.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
-        err ? console.log(err) : null;
-      });
-      res.send(response);
-      return true;
-    }).catch(function (err) {
-      res.send(response);
-      return true;
-    });
-  })
+app.post("/deleteChapter", function(req,res){
+  jwt.verify(req.body.token, "Deez Nuts", function(err, decoded) {
+    if (err){
+      res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    }else{
+      chapters.get(req.body.id).then(response => {
+        const chapter = response;
+        chapters.remove(chapter).then(response => {
+          fs.mkdirSync(`${__dirname}/public/books/${req.body.id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${chapter.number}-${chapter.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
+            err ? console.log(err) : null;
+          });
+          res.send(response);
+          return true;
+        }).catch(function (err) {
+          res.send(response);
+          return true;
+        });
+      })
+    }
+  });
+ 
  
 });
 app.post("/Login",(req,res) =>{
@@ -291,11 +347,41 @@ app.post("/Login",(req,res) =>{
         email : {$eq : req.body.email},
       },
     }).then(response =>{
-
       if(response.docs.length > 0){
         bcrypt.compare(req.body.password, response.docs[0].password).then(pass => {
           if(pass){
             res.json({user : response.docs[0],err:false});
+          }else{
+            res.json({user : null,err:true});
+          }
+        }).catch(err => {
+          res.json({user : null,err:true})
+        }); 
+      }else{
+        res.json({user:null,err:true});
+      }
+    }).catch(err => res.json({user : null,err:true}))
+  }).catch(err =>res.json({user : null,err:true}));
+});
+app.post("/AdminLogin",(req,res) =>{
+  const bcrypt = require('bcrypt');
+  adminUser.createIndex({
+    index: {
+      fields: ["email"]
+    }
+  }).then(() => {
+    return adminUser.find({ 
+      selector: {
+        email : {$eq : req.body.email},
+      },
+    }).then(response =>{
+      if(response.docs.length > 0){
+        bcrypt.compare(req.body.password, response.docs[0].password).then(pass => {
+          if(pass){
+            var token = jwt.sign({ id: response.docs[0].nick }, "Deez Nuts", {
+              expiresIn: 86400 // expires in 24 hours
+            });
+            res.json({user : response.docs[0],err:false,token:token});
           }else{
             res.json({user : null,err:true});
           }
