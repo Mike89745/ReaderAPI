@@ -35,7 +35,12 @@ app.use(cors());
 
 app.post('/upload/image',  upload.single('file'), function (req, res, next) {
   let file = req.file;
-  fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.chapterName}/${file.originalname.split('.').slice(0, -1).join('.')}.jpg`)
+  let mimeType = file.mimetype === "application/pdf" ? ".pdf" : file.mimetype === "application/epub+zip" ? ".epub" : ".jpg";
+  let name = file.originalname.split('.').slice(0, -1).join('.')
+  if(mimeType != ".jpg"){
+    name = req.body.chapterName;
+  }
+  fs.renameSync(`${__dirname}/public/${file.filename}`,`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.chapterName}/${name}${mimeType}`)
   res.json("Done");
 })
 
@@ -89,7 +94,6 @@ app.post("/addChapter",function(req,res){
     pages : req.body.pages,
     type : req.body.type,
   }
-  console.log(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`);
   chapters.post(chapter).then(response => {
     fs.mkdirSync(`${__dirname}/public/books/${req.body.book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${req.body.number}-${req.body.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
       err ? console.log(err) : null;
@@ -98,17 +102,14 @@ app.post("/addChapter",function(req,res){
   }).catch(err => res.json(err));
  
 });
-app.post("/addReview",function(req,res){
-  const Review = {
-    book_id : req.body.book_id,
-    user : req.body.userName,
-    rating : req.body.rating,
-    text: req.body.text,
-    dateAdded : new Date().toDateString(),
-  }
-  reviews.post(Review).then(response => {
-    res.send(response);
-  }).catch(err => res.send(err));
+app.post("/addReview",(req,res)=>{
+  //req.body._id = req.body.user + req.body.dateAdded;
+  var NewReviews = new PouchDB("review");
+  NewReviews.post(req.body).then(response => {
+    res.json(response);
+  }).catch(err => {
+    res.json({error : true,errormsg : err});
+  });
  
 });
 app.get("/getBooks/:limit", function(req,res){
@@ -157,7 +158,7 @@ app.get("/getBook/:id",(req,res) => {
     res.json(err);
   });
 });
-app.post("/Search/",(req,res) => {
+app.post("/Search",(req,res) => {
   books.createIndex({
     index: {
       fields: ['_id',"author","artist","status","tags"]
@@ -194,38 +195,11 @@ app.get("/getChapters/:id",(req,res) => {
   });
   
 });
-app.get("/getChapterPages/:id/:chapter",(req,res) =>{
-  chapters.createIndex({
-    index: {
-      fields: ['book_id','number']
-    }
-  }).then(() => {
-    return chapters.find({
-      selector: {
-        book_id : {$eq : req.params.id},
-        number: {$eq : req.params.chapter}
-      },
-    }).then(response =>{
-      if(response.docs.length > 0){
-        fs.readdir(`${__dirname}/public/books/${response.docs[0].book_id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${response.docs[0].number}-${response.docs[0].title.replace(/[/\\?%*:|"<>. ]/g, '-')}`, (err, files) => {
-        if(err){
-          res.status(404).send("Chapter not found");
-        }else{
-          res.json({pages: files.length,chapterTitle : response.docs[0].title});
-        }
-      });
-      }else{
-        res.status(404).send("Chapter not found");
-      }
-      //console.log(response.docs[0].book_id,`${__dirname}/public/books/XD/1-deez`);
 
-    }).catch(err => console.log(err));
-  }).catch(function (err) {
-    res.json(err);
-  });
- 
-});
 app.get("/getReviews/:id",(req,res) => {
+  reviews.allDocs().then(res=>{
+    console.log(res);
+  }).catch(err=>console.log(err));
   reviews.createIndex({
     index: {
       fields: ['book_id']
@@ -270,13 +244,40 @@ app.get("/dbs/:db/", function(req,res){
   });
 });
 app.get("/deleteBook/:id", function(req,res){
-  books.remove(req.params.id).then(response => {
-    res.send(response);
-    return true;
-  }).catch(function (err) {
-    res.send(response);
-    return true;
-  });
+  books.get(req.params.id).then(response=>{
+    const BookRemove = response;
+    books.remove(BookRemove).then(response => {
+      let fileName = req.params.id.replace(/[/\\?%*:|"<>. ]/g, '-');
+      fs.unlinkSync(`${__dirname}/public/books/${fileName}`);
+      res.send(response);
+      return true;
+    }).catch(function (err) {
+      res.json(error);
+      return true;
+    });
+  }).catch(error => {
+    console.log(error);
+    res.json(error);
+  })
+
+  
+  
+});
+app.get("/deleteChapter/:id", function(req,res){
+  chapters.get(req.params.id).then(response => {
+    const chapter = response;
+    chapters.remove(chapter).then(response => {
+      fs.mkdirSync(`${__dirname}/public/books/${req.params.id.replace(/[/\\?%*:|"<>. ]/g, '-')}/${chapter.number}-${chapter.title.replace(/[/\\?%*:|"<>. ]/g, '-')}`,function(err){
+        err ? console.log(err) : null;
+      });
+      res.send(response);
+      return true;
+    }).catch(function (err) {
+      res.send(response);
+      return true;
+    });
+  })
+ 
 });
 app.post("/Login",(req,res) =>{
   const bcrypt = require('bcrypt');
